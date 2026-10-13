@@ -74,11 +74,16 @@ jobs:
           git push origin main
           git push origin "v${{ steps.bump.outputs.new_version }}"
 
+      # The PAT goes in the `token` INPUT, not the GITHUB_TOKEN env var. This
+      # action declares `token` with `default: ${{ github.token }}`, so an env
+      # var alone leaves the input on that default - the intrinsic GITHUB_TOKEN,
+      # which this workflow scopes to `contents: read`. The v1.1.1 release failed
+      # exactly that way: 403 "Resource not accessible by integration", after the
+      # bump, tag and push had all already succeeded on the PAT.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ secrets.GH_BOT_USER_PAT }}
           name: "v${{ steps.bump.outputs.new_version }}"
           tag_name: "v${{ steps.bump.outputs.new_version }}"
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_BOT_USER_PAT }}
