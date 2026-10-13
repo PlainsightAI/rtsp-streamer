@@ -26,10 +26,21 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # GH_BOT_USER_PAT, not FILTER_RELEASE_GH_TOKEN: the latter is an org secret
+      # with `private` visibility, which GitHub grants only to private and internal
+      # repositories, so it resolves to an empty string here and every step using it
+      # would fail. GH_BOT_USER_PAT is one of the three org secrets with `all`
+      # visibility, and it is what the other public repositories in this org use.
+      # It also has to be a PAT rather than the intrinsic GITHUB_TOKEN for two
+      # reasons: a push authenticated with GITHUB_TOKEN does not trigger further
+      # workflows, so the tag would never start the publish job in ci.yaml, and the
+      # bot it belongs to is in @PlainsightAI/admins, which the org branch ruleset
+      # lists as an always-bypass actor - the push to main would otherwise be
+      # rejected for not going through a pull request.
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          token: ${{ secrets.FILTER_RELEASE_GH_TOKEN }}
+          token: ${{ secrets.GH_BOT_USER_PAT }}
 
       - name: Configure Git
         shell: bash
@@ -70,4 +81,4 @@ jobs:
           tag_name: "v${{ steps.bump.outputs.new_version }}"
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.FILTER_RELEASE_GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_BOT_USER_PAT }}
