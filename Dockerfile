@@ -5,7 +5,7 @@ FROM bluenviron/mediamtx:latest AS rtsp-server
 FROM alpine:latest
 
 # Install required packages
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && apk add --no-cache \
     netcat-openbsd \
     bash \
     ffmpeg \
@@ -35,9 +35,12 @@ ENV VIDEO_STREAM_NAME=stream0
 # Expose ports
 EXPOSE 8554 8888
 
-# Health check
+# Health check: probe the RTSP port, which is the service this image exists to
+# provide. The HLS port (8888) answers 404 on `/` — MediaMTX only serves a path
+# per stream — so `curl -f` against it marked every container unhealthy even
+# while RTSP was serving correctly. Matches the check the compose files use.
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=10s \
-    CMD curl -f http://localhost:8888/ || exit 1
+    CMD nc -z localhost 8554 || exit 1
 
 # Start both services
 COPY docker-entrypoint.sh /usr/local/bin/
