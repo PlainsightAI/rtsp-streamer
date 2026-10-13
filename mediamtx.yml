@@ -1,0 +1,24 @@
+webrtc: true
+webrtcAddress: :8889
+
+rtsp: true
+rtspAddress: :8554
+
+rtmp: true
+rtmpAddress: :1935
+
+hls: true
+hlsAddress: :8888
+
+srt: true
+srtAddress: :8890
+
+paths:
+  stream0:
+    source: publisher
+
+  stream1:
+    source: publisher
+
+  stream2:
+    source: publisher 

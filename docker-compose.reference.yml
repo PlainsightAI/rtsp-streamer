@@ -1,0 +1,54 @@
+services:
+  rtsp-server:
+    image: bluenviron/mediamtx:latest
+    environment:
+      - MTX_RTSPTRANSPORTS=${RTSP_TRANSPORT}
+    ports:
+      - "${RTSP_PORT}:8554"
+      - "${WEB_INTERFACE_PORT}:8888"
+    volumes:
+      - ${VIDEO_SOURCE}:/data/videos
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8554"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: ${RTSP_CPU_LIMIT}
+          memory: ${RTSP_MEMORY_LIMIT}
+        reservations:
+          cpus: ${RTSP_CPU_REQUEST}
+          memory: ${RTSP_MEMORY_REQUEST}
+    restart: unless-stopped
+
+  ffmpeg-streamer:
+    image: linuxserver/ffmpeg
+    depends_on:
+      rtsp-server:
+        condition: service_healthy
+    volumes:
+      - ${VIDEO_SOURCE}:/data/videos
+    environment:
+      - VIDEO_LOOP=${VIDEO_LOOP}
+      - VIDEO_STREAM_NAME=${VIDEO_STREAM_NAME}
+    command: >
+      /bin/sh -c '
+      if [ -f /data/videos/stream.sh ]; then
+        chmod +x /data/videos/stream.sh
+        /data/videos/stream.sh
+      else
+        echo "No stream script found. Please ensure videos are mounted correctly."
+        exit 1
+      fi
+      '
+    deploy:
+      resources:
+        limits:
+          cpus: ${FFMPEG_CPU_LIMIT}
+          memory: ${FFMPEG_MEMORY_LIMIT}
+        reservations:
+          cpus: ${FFMPEG_CPU_REQUEST}
+          memory: ${FFMPEG_MEMORY_REQUEST}
+    restart: unless-stopped 

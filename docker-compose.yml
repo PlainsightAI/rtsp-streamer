@@ -1,0 +1,21 @@
+services:
+  rtsp-streamer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${IMAGE:-plainsightai/rtsp-streamer}:${VERSION:-1.1.0}
+    ports:
+      - "${RTSP_PORT:-8554}:8554"
+      - "${WEB_INTERFACE_PORT:-8888}:8888"
+    volumes:
+      - type: bind
+        source: ${VIDEO_SOURCE-.}
+        target: /data/videos
+        read_only: true
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8554 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped 
